@@ -1,0 +1,65 @@
+import requests
+
+def fetch_traffic_data(api_key, origin, destination):
+    base_url = 'https://maps.googleapis.com/maps/api/directions/json'
+    params = {
+        'origin': origin,
+        'destination': destination,
+        'key': api_key,
+        'departure_time': 'now',
+        'traffic_model': 'best_guess',
+    }
+
+    try:
+        response = requests.get(base_url, params=params)
+        response.raise_for_status()
+        data = response.json()
+
+        if 'routes' in data and len(data['routes']) > 0:
+            route = data['routes'][0]
+            legs = route['legs'][0]
+
+            traffic_condition = legs['traffic_speed_entry']['conditions']
+            travel_time_in_traffic = legs['duration_in_traffic']['text']
+
+            alternative_routes = []
+            if len(route['legs']) > 1:
+                for alt_leg in route['legs'][1:]:
+                    alt_route_summary = alt_leg['summary']
+                    alt_travel_time = alt_leg['duration']['text']
+                    alternative_routes.append((alt_route_summary, alt_travel_time))
+
+            return {
+                'traffic_condition': traffic_condition,
+                'travel_time_in_traffic': travel_time_in_traffic,
+                'alternative_routes': alternative_routes
+            }
+        else:
+            return None
+
+    except requests.exceptions.RequestException as e:
+        print(f"Error fetching data: {e}")
+        return None
+
+def display_traffic_data(traffic_data, origin, destination):
+    if traffic_data:
+        print(f"Current traffic conditions from {origin} to {destination}: {traffic_data['traffic_condition']}")
+        print(f"Estimated travel time in current traffic: {traffic_data['travel_time_in_traffic']}")
+
+        if traffic_data['alternative_routes']:
+            print("\nAlternative Routes:")
+            for i, (route_summary, travel_time) in enumerate(traffic_data['alternative_routes'], start=1):
+                print(f"Route {i}: {route_summary}")
+                print(f"Estimated travel time: {travel_time}")
+                print()
+
+    else:
+        print(f"No traffic data found for route from {origin} to {destination}")
+
+if __name__ == "__main__":
+    api_key = 'your_google_maps_api_key'
+    origin = input("Enter starting point (address or coordinates): ")
+    destination = input("Enter destination (address or coordinates): ")
+
+    traffic_data = fetch_traffic_data(api_key, origin, destination)
+    display_traffic_data(traffic_data, origin, destination)
