@@ -1,0 +1,79 @@
+class Product:
+    def __init__(self, id, name, reorder_point, lead_time):
+        self.id = id
+        self.name = name
+        self.reorder_point = reorder_point
+        self.lead_time = lead_time
+        self.stock_level = 0
+
+class Warehouse:
+    def __init__(self, name):
+        self.name = name
+        self.inventory = {}
+
+    def add_product(self, product, quantity):
+        if product.id in self.inventory:
+            self.inventory[product.id] += quantity
+        else:
+            self.inventory[product.id] = quantity
+
+    def get_product_stock_level(self, product):
+        return self.inventory.get(product.id, 0)
+
+def calculate_reorder_point(product, lead_time, safety_stock_factor=1.25):
+    average_daily_demand = 10  # Example average daily demand
+    return int(average_daily_demand * lead_time * safety_stock_factor)
+
+def track_inventory(warehouses):
+    alerts = []
+    for warehouse in warehouses:
+        print(f"\nInventory levels in {warehouse.name}:")
+        for product_id, stock_level in warehouse.inventory.items():
+            product = product_dict[product_id]
+            product.stock_level = stock_level
+            print(f"{product.name}: Stock Level = {stock_level}")
+            if stock_level < product.reorder_point:
+                alerts.append(f"ALERT: {product.name} in {warehouse.name} needs reorder!")
+    return alerts
+
+def generate_reports(warehouses):
+    total_stockout_events = 0
+    total_overstock_cost = 0
+
+    for warehouse in warehouses:
+        print(f"\nInventory reports for {warehouse.name}:")
+        for product_id, stock_level in warehouse.inventory.items():
+            product = product_dict[product_id]
+            print(f"{product.name}: Stock Level = {stock_level}")
+            if stock_level == 0:
+                total_stockout_events += 1
+            elif stock_level > product.reorder_point:
+                overstock_amount = stock_level - product.reorder_point
+                overstock_cost = overstock_amount * product.unit_cost
+                total_overstock_cost += overstock_cost
+                print(f"Overstock Cost: ${overstock_cost:.2f}")
+
+    print("\nOverall Reports:")
+    print(f"Total Stockout Events: {total_stockout_events}")
+    print(f"Total Overstock Cost: ${total_overstock_cost:.2f}")
+
+product_dict = {
+    1: Product(id=1, name="Product A", reorder_point=15, lead_time=7),
+    2: Product(id=2, name="Product B", reorder_point=20, lead_time=5)
+}
+
+warehouse1 = Warehouse(name="Warehouse 1")
+warehouse1.add_product(product_dict[1], 20)
+warehouse1.add_product(product_dict[2], 30)
+
+warehouse2 = Warehouse(name="Warehouse 2")
+warehouse2.add_product(product_dict[1], 15)
+warehouse2.add_product(product_dict[2], 25)
+
+warehouses = [warehouse1, warehouse2]
+
+alerts = track_inventory(warehouses)
+for alert in alerts:
+    print(alert)
+
+generate_reports(warehouses)
